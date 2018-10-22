@@ -69,8 +69,9 @@ class Interpreter {
         }
     }
     private void closeLoop(){
-        if(cells[pointer]!=0)
-        index = findPair(index);
+        if(cells[pointer]!=0) {
+            index = findPair(index);
+        }
     }
     //endregion
 
@@ -118,6 +119,8 @@ class Interpreter {
     }
 
     private int findPair(int index){
+        int i = index;
+
         if(codeAt(index)=='['){
 
             int indent = 0;
@@ -132,7 +135,8 @@ class Interpreter {
         } else if(codeAt(index)==']'){
             int indent = 0;
             index--;
-            while(codeAt(index)!='[' || indent!=0){
+            while(index<0 || (codeAt(index)!='[' || indent!=0)){
+                if(index<0) throw new RuntimeException("Hold on, the bracket at " + i + " isn't closed :/"); //FIXME: This thing throws RuntimeExceptions seemingly randomly. Probably has something to do with mishandled nesting
                 if(codeAt(indent)=='[' && indent!=0) indent--;
                 else if(codeAt(index)==']') indent++;
                 index--;
