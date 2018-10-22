@@ -9,9 +9,9 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 
 public class Main {
-    public static void main(String... args) throws IOException {
+    public static void main(String... args) {
         JFrame frame = new JFrame("Brainfuck interpreter");
-        frame.setSize(500, 750);
+        frame.setSize(500, 500);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         JPanel mainPanel = new JPanel(new BorderLayout());
