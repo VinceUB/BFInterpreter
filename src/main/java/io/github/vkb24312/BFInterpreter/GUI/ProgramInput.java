@@ -10,9 +10,13 @@ public class ProgramInput extends JTextField {
         int index = 0;
 
         @Override
-        public int read() throws IOException {
+        public int read() {
             index++;
-            return getText().charAt(index-1);
+            try {
+                return getText().charAt(index - 1);
+            } catch (StringIndexOutOfBoundsException e){
+                return '\u0000';
+            }
         }
 
         @Override
@@ -26,7 +30,7 @@ public class ProgramInput extends JTextField {
         }
 
         @Override
-        public synchronized void reset() throws IOException {
+        public synchronized void reset() {
             index = mark;
         }
     };
