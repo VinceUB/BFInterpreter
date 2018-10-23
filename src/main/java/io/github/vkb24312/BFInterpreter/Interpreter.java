@@ -29,14 +29,14 @@ class Interpreter {
         }
     }
     private void subtract(){
-        if((cells[pointer&0xff]) <= 0){
+        if((cells[pointer]&0xff) <= 0){
             cells[pointer] = -1;
         } else {
             cells[pointer]--;
         }
     }
     private void pointerUp(){
-        if(pointer>=cells.length){
+        if(pointer>=cells.length-1){
             pointer = 0;
         } else {
             pointer++;
@@ -44,7 +44,7 @@ class Interpreter {
     }
     private void pointerDown(){
         if(pointer<=0){
-            pointer = cells.length;
+            pointer = cells.length-1;
         } else {
             pointer--;
         }
@@ -79,6 +79,7 @@ class Interpreter {
     void run(){
         try {
             for (index = 0; index < code.toCharArray().length; index++) {
+                //System.out.print(codeAt(index)); //To be used in debug. Comment out for efficiency
                 switch (codeAt(index)) {
                     case '+':
                         add();
@@ -125,26 +126,45 @@ class Interpreter {
 
             int indent = 0;
             index++;
-            while(codeAt(index)!=']' || indent!=0){
-                if(codeAt(index)=='[') indent++;
-                else if(codeAt(index)==']' && indent!=0) indent--;
+            while(index<code.length()){
+                if(codeAt(index)=='['){
+                    indent++;
+                } else if(codeAt(index)==']') {
+                    if (indent <= 0) {
+                        return index;
+                    } else {
+                        indent--;
+                    }
+                }
                 index++;
             }
-            return index;
+            throw new BracketException("The bracket at position " + i + " needs to be closed");
 
         } else if(codeAt(index)==']'){
             int indent = 0;
             index--;
-            while(index<0 || (codeAt(index)!='[' || indent!=0)){
-                if(index<0) throw new RuntimeException("Hold on, the bracket at " + i + " isn't closed :/"); //FIXME: This thing throws RuntimeExceptions seemingly randomly. Probably has something to do with mishandled nesting
-                if(codeAt(indent)=='[' && indent!=0) indent--;
-                else if(codeAt(index)==']') indent++;
+            while(index>=0){
+                if(codeAt(index)=='['){
+                    if(indent <= 0){
+                        return index;
+                    } else {
+                        indent--;
+                    }
+                } else if(codeAt(index) == ']'){
+                    indent++;
+                }
                 index--;
             }
-            return index;
+            throw new BracketException("The bracket at postition " + i + " needs to be opened");
 
         } else {
-            throw new RuntimeException("Character " + codeAt(index) + " is not a bracket");
+            throw new IllegalArgumentException("Character " + codeAt(index) + " is not a bracket");
         }
+    }
+}
+
+class BracketException extends RuntimeException{
+    BracketException(String message){
+        super(message);
     }
 }
