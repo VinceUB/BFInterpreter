@@ -1,8 +1,12 @@
 package io.github.vkb24312.BFInterpreter;
 
-import io.github.vkb24312.BFInterpreter.GUI.*;
+import io.github.vkb24312.BFInterpreter.ArgumentParsing.ArgList;
+import io.github.vkb24312.BFInterpreter.ArgumentParsing.Argument;
+import io.github.vkb24312.BFInterpreter.GUI.InputPane;
+import io.github.vkb24312.BFInterpreter.GUI.ProgramPanel;
 
 import javax.swing.*;
+import javax.swing.text.BadLocationException;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.File;
@@ -13,63 +17,28 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Scanner;
 
-public class Main {
-    public static void main(String... args) {
-        if(args.length>0){
-            if(Arrays.asList(args).contains("-help") || Arrays.asList(args).contains("/help") || Arrays.asList(args).contains("-h") || Arrays.asList(args).contains("/h")){
-                System.out.println(help());
-            }else if(Arrays.asList(args).contains("-c") || Arrays.asList(args).contains("-console") || Arrays.asList(args).contains("/c") || Arrays.asList(args).contains("/console")){
-                /*if(Arrays.asList(args).contains("-f")){
-                    ConsoleRun(
-                            new File(
-                                    args[
-                                            Arrays.asList(args).indexOf("-f")+1
-                                    ]
-                            )
-                    );
-                } if(Arrays.asList(args).contains("/f")){
-                    ConsoleRun(
-                            new File(
-                                    args[
-                                            Arrays.asList(args).indexOf("/f")+1
-                                            ]
-                            )
-                    );
-                } else if(Arrays.asList(args).contains("-file")){
-                    ConsoleRun(
-                            new File(
-                                    args[
-                                            Arrays.asList(args).indexOf("-file")+1
-                                    ]
-                            )
-                    );
-                } else if(Arrays.asList(args).contains("/file")){
-                    ConsoleRun(
-                            new File(
-                                    args[
-                                            Arrays.asList(args).indexOf("/file")+1
-                                            ]
-                            )
-                    );
-                }*/
-                ConsoleRun();
-            } else {
-                GUIRun();
-            }
+public class Main extends Object{
+    private static ArgList arguments = new ArgList(Arrays.asList(
+            new Argument("help", "Displays the help message", "h"),
+            new Argument("console", "Runs in non-gui mode", "c"),
+            new Argument("file", "Uses file (specified after) as input", "f")
+    ));
 
+    public static void main(String... args) throws IOException {
+        if(args.length>0){
+            parseArguments(args);
         } else if(GraphicsEnvironment.isHeadless()){
             ConsoleRun();
-
         } else {
             GUIRun();
         }
     }
 
-    private static void ConsoleRun(){
-        ConsoleRun(null);
+    private static void GUIRun() throws IOException{
+        GUIRun(null);
     }
 
-    private static void GUIRun(){
+    private static void GUIRun(File f) throws IOException {
         JFrame frame = new JFrame("Brainfuck interpreter");
         frame.setSize(500, 500);
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -80,6 +49,17 @@ public class Main {
         JScrollPane codeScrollPane = new JScrollPane();
         InputPane codePane = new InputPane();
         ProgramPanel programPane = new ProgramPanel();
+
+        if(f!=null && f.isFile()){
+            String code = new String(Files.readAllBytes(f.toPath()));
+
+            codePane.setText(null);
+            try {
+                codePane.getStyledDocument().insertString(0, code, codePane.code);
+            } catch (BadLocationException e) {
+                e.printStackTrace();
+            }
+        }
 
         codeScrollPane.setPreferredSize(new Dimension(frame.getWidth(), frame.getHeight()/2));
         programPane.setPreferredSize(new Dimension(frame.getWidth(), frame.getHeight()-(codeScrollPane.getPreferredSize().height)));
@@ -106,11 +86,15 @@ public class Main {
         });
     }
 
+    private static void ConsoleRun(){
+        ConsoleRun(null);
+    }
+
     private static void ConsoleRun(File f){
         if(f!=null && f.exists()){
             try {
                 String code = new String(Files.readAllBytes(f.toPath()));
-                new Interpreter(code, System.out, System.in, System.err);
+                new Interpreter(code, System.out, System.in, System.err).run();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -149,18 +133,68 @@ public class Main {
             command = "java -jar " + source.getName();
         }
 
-        HashMap<String, String> options = new HashMap<>();
-        options.put("-help", "Displays the help message");
-        options.put("-console", "Runs in non-gui mode");
-        options.put("-file", "Uses file (specified after) as input (Planned feature)");
-
         StringBuilder message = new StringBuilder("");
 
         message.append(description);
         message.append("\nUsage: ").append(command).append(" [OPTIONS]\nOptions:");
 
-        options.forEach((k, v) -> message.append("\n\t").append(k).append("\t").append(v));
+        message.append("\n\t").append("Full key\tShortcut\tDescription");
+        for (Argument arg : arguments) {
+            message.append("\n\t-").append(arg.getFull()).append("\t-").append(arg.getShort()).append("\t-").append(arg.getDescription());
+        }
 
         return message.toString();
     }
+
+    private static void parseArguments(String... args) throws IOException{
+        //region Turn arguments into HashMap
+        HashMap<Argument, String> argMap = new HashMap<>(arguments.size());
+
+        if(new File(args[0]).exists()) {
+            argMap.put(arguments.getArgument("file"), args[0]);
+        }
+
+        for (int i = 0; i < args.length; i++) {
+            if(args[i].startsWith("-") || args[i].startsWith("/")){
+                args[i] = args[i].substring(1);
+                Argument arg = arguments.getArgument(args[i]);
+                if(arg==null){
+                    System.out.println("Argument " + args[i] + " does not exist\n" + help());
+                    return;
+                }
+                try {
+                    if (args[i + 1].startsWith("-") || args[i+1].startsWith("/")) {
+                        argMap.put(arg, null);
+                    } else {
+                        argMap.put(arg, args[i + 1]);
+                    }
+                } catch(ArrayIndexOutOfBoundsException e){
+                    argMap.put(arg, null);
+                }
+            }
+        }
+        //endregion
+
+        if(argMap.containsKey(arguments.get("help"))){
+            System.out.println(help());
+            return;
+        }
+
+        boolean consoleMode = argMap.containsKey(arguments.get("console"));
+
+        if(consoleMode){
+            if(argMap.containsKey(arguments.get("file"))){
+                ConsoleRun(new File(argMap.get(arguments.get("file"))));
+            } else {
+                ConsoleRun();
+            }
+        } else {
+            if(argMap.containsKey(arguments.get("file"))){
+                GUIRun(new File(argMap.get(arguments.get("file"))));
+            } else {
+                GUIRun();
+            }
+        }
+    }
 }
+

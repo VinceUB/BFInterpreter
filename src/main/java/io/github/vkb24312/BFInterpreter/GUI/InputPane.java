@@ -1,12 +1,10 @@
 package io.github.vkb24312.BFInterpreter.GUI;
 
 import javax.swing.*;
-import javax.swing.event.HyperlinkEvent;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
-import javax.swing.text.html.HTMLDocument;
 import java.awt.*;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
@@ -15,16 +13,13 @@ import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Scanner;
 
 public class InputPane extends JTextPane {
     private final static String defaultText = "Enter your code here";
 
     private StyleContext context = new StyleContext();
     private Style ghostText = context.addStyle("ghost", null);
-    private Style code = context.getStyle("default");
+    public Style code = context.getStyle("default");
 
     public InputPane() {
         StyleConstants.setForeground(ghostText, Color.GRAY);
